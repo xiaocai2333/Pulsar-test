@@ -16,9 +16,7 @@ func main() {
 	topic := "pulsar-test-1"
 	sub1 := "sub1"
 	sub2 := "sub2"
-	go producer.Produce(topic)
+	go producer.Produce(client, topic)
 	go consumer.Consume(client, topic, sub1, 60)
 	go consumer.Consume(client, topic, sub2, 6000)
 }
-
-
