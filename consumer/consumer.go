@@ -50,5 +50,33 @@ func Consume(client pulsar.Client, topic, subName string, timeout time.Duration)
 			return
 		}
 	}
+}
 
+func Seek(client pulsar.Client, topic, subName string, msgID pulsar.MessageID) {
+	receiveCh := make(chan pulsar.ConsumerMessage)
+
+	opts := pulsar.ConsumerOptions{
+		Topic:                       topic,
+		SubscriptionName:            subName,
+		Type:                        0,
+		SubscriptionInitialPosition: 0,
+		MessageChannel:              receiveCh,
+	}
+	consumer, err := client.Subscribe(opts)
+	if err != nil {
+		fmt.Printf("create consumer err %s", err)
+	}
+	err = consumer.Seek(msgID)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		select {
+		case msg, ok := <-consumer.Chan():
+			if !ok {
+				return
+			}
+			fmt.Println("consumer data", string(msg.Message.Payload()))
+		}
+	}
 }
