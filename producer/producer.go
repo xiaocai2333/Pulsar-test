@@ -8,14 +8,14 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 )
 
-func Produce(client pulsar.Client, topic string, duration time.Duration) {
+func Produce(client pulsar.Client, topic string, msgSize int, duration time.Duration) {
 	//defer wg.Done()
 	opts := pulsar.ProducerOptions{Topic: topic}
 	producer, err := client.CreateProducer(opts)
 	if err != nil {
 		fmt.Printf("create producer err %s", err)
 	}
-	msgSize := 1 * 1024 * 1024
+
 	strBytes := make([]byte, msgSize)
 	for j := 0; j < msgSize; j++ {
 		strBytes[j] = byte(j)

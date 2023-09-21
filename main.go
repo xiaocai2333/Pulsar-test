@@ -15,7 +15,7 @@ func main() {
 	//opts := pulsar.ClientOptions{URL: "pulsar://10.102.6.53:6650"}
 	args := os.Args
 	fmt.Println("program name: ", args[0])
-	if len(args) != 6 {
+	if len(args) != 5 {
 		fmt.Println("invalid args")
 		return
 	}
@@ -24,14 +24,14 @@ func main() {
 	}
 	pulsarAddr := args[1]
 	topicPrefix := args[2]
-	goroutinesNumStr := args[3]
-	durationStr := args[4]
-	goroutinesNum, err := strconv.Atoi(goroutinesNumStr)
-	sameTopic := args[5]
-	if err != nil {
-		fmt.Println("goroutineNum invalid: ", err)
-		return
-	}
+	//goroutinesNumStr := args[3]
+	durationStr := args[3]
+	//goroutinesNum, err := strconv.Atoi(goroutinesNumStr)
+	sameTopic := args[4]
+	//if err != nil {
+	//	fmt.Println("goroutineNum invalid: ", err)
+	//	return
+	//}
 	durationNum, err := strconv.Atoi(durationStr)
 	if err != nil {
 		fmt.Println("goroutineNum invalid: ", err)
@@ -45,21 +45,28 @@ func main() {
 		return
 	}
 
+	msgSizeList := []int{1 * 1024, 500 * 1024, 1 * 1024 * 1024, 5 * 1024 * 1024}
+	goroutinesNumList := []int{1, 10, 50, 100}
+
 	var wg sync.WaitGroup
 	duration := time.Minute * time.Duration(durationNum)
 
 	go consumer.Consume(client, topicPrefix, "sub-1", time.Second*10)
 
-	for i := 0; i < goroutinesNum; i++ {
-		wg.Add(1)
-		i := i
-		go func() {
-			defer wg.Done()
-			topicName := topicPrefix
-			if sameTopic == "false" {
-				topicName = topicPrefix + "-" + strconv.Itoa(i)
+	for _, msgSize := range msgSizeList {
+		for _, goroutinesNum := range goroutinesNumList {
+			for i := 0; i < goroutinesNum; i++ {
+				wg.Add(1)
+				i := i
+				go func() {
+					defer wg.Done()
+					topicName := topicPrefix
+					if sameTopic == "false" {
+						topicName = topicPrefix + "-" + strconv.Itoa(i)
+					}
+					producer.Produce(client, topicName, msgSize, duration)
+				}()
 			}
-			producer.Produce(client, topicName, duration)
-		}()
+		}
 	}
 }
