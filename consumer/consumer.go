@@ -7,17 +7,6 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 )
 
-//var client pulsar.Client
-
-func main() {
-	opts := pulsar.ClientOptions{URL: "pulsar://localhost:6650"}
-	client, err := pulsar.NewClient(opts)
-	if err != nil {
-		fmt.Printf("create client err %s", err)
-	}
-	Consume(client, "output-api", "xxxx", 60)
-}
-
 func Consume(client pulsar.Client, topic, subName string, timeout time.Duration) {
 
 	receiveCh := make(chan pulsar.ConsumerMessage)
@@ -39,7 +28,15 @@ func Consume(client pulsar.Client, topic, subName string, timeout time.Duration)
 	n := 0
 	for {
 		select {
-		case <-consumer.Chan():
+		case msg, ok := <-consumer.Chan():
+			if !ok {
+				fmt.Println("consumer Chan closed")
+				return
+			}
+			if n%10 == 0 {
+				fmt.Println("receive message length: ", len(msg.Message.Payload()))
+			}
+			msg.Ack(msg)
 			n++
 			if startTs.IsZero() {
 				startTs = time.Now()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
 	"os"
+	"pulsar-test/consumer"
 	"pulsar-test/producer"
 	"strconv"
 	"sync"
@@ -46,6 +47,8 @@ func main() {
 
 	var wg sync.WaitGroup
 	duration := time.Minute * time.Duration(durationNum)
+
+	go consumer.Consume(client, topicPrefix, "sub-1", time.Second*10)
 
 	for i := 0; i < goroutinesNum; i++ {
 		wg.Add(1)
