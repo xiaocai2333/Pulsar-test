@@ -21,9 +21,11 @@ func Consume(client pulsar.Client, topic, subName string, timeout time.Duration)
 	consumer, err := client.Subscribe(opts)
 	if err != nil {
 		fmt.Printf("create consumer err %s", err)
+		return
 	}
-	var startTs time.Time
-	timer := time.NewTimer(timeout * time.Second)
+	defer consumer.Close()
+
+	timer := time.NewTicker(timeout)
 	defer timer.Stop()
 	n := 0
 	for {
@@ -33,18 +35,11 @@ func Consume(client pulsar.Client, topic, subName string, timeout time.Duration)
 				fmt.Println("consumer Chan closed")
 				return
 			}
-			if n%10 == 0 {
-				fmt.Println("receive message length: ", len(msg.Message.Payload()))
-			}
 			msg.Ack(msg)
 			n++
-			if startTs.IsZero() {
-				startTs = time.Now()
-			}
 		case <-timer.C:
-			duration := time.Since(startTs).Seconds()
-			fmt.Printf("rate: %.2f", float64(n)/duration)
-			return
+			fmt.Println(fmt.Sprintf("consume msg num: %d", n))
+			//return
 		}
 	}
 }

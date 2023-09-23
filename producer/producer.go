@@ -14,7 +14,9 @@ func Produce(client pulsar.Client, topic string, msgSize int, duration time.Dura
 	producer, err := client.CreateProducer(opts)
 	if err != nil {
 		fmt.Printf("create producer err %s", err)
+		return
 	}
+	defer producer.Close()
 
 	strBytes := make([]byte, msgSize)
 	for j := 0; j < msgSize; j++ {
@@ -33,14 +35,18 @@ func Produce(client pulsar.Client, topic string, msgSize int, duration time.Dura
 		select {
 		case <-ticker.C:
 			end := time.Now().UnixMilli()
-			fmt.Printf("send 100 msg cost: %d, %f\n", end-start, float64(int64(messageNum*msgSize)/(end-start))*1000.0/1024/1024)
+			fmt.Printf("send %d msg %d cost: %d, %f\n", messageNum, msgSize, end-start,
+				float64(int64(messageNum*msgSize)/(end-start))*1000.0/1024/1024)
 			return
 		default:
+			// ts1 := time.Now().UnixMilli()
 			_, err = producer.Send(context.Background(), msg)
 			if err != nil {
 				fmt.Printf("producer send error %s", err)
 				return
 			}
+			// ts2 := time.Now().UnixMilli()
+			// fmt.Printf(" cost: %d", ts2-ts1)
 			messageNum++
 		}
 	}
