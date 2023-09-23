@@ -14,7 +14,7 @@ func main() {
 	//opts := pulsar.ClientOptions{URL: "pulsar://10.102.6.53:6650"}
 	args := os.Args
 	fmt.Println("program name: ", args[0])
-	if len(args) != 5 {
+	if len(args) != 4 {
 		fmt.Println("invalid args")
 		return
 	}
@@ -26,7 +26,7 @@ func main() {
 	//goroutinesNumStr := args[3]
 	durationStr := args[3]
 	//goroutinesNum, err := strconv.Atoi(goroutinesNumStr)
-	sameTopic := args[4]
+	//sameTopic := args[4]
 	//if err != nil {
 	//	fmt.Println("goroutineNum invalid: ", err)
 	//	return
@@ -49,7 +49,9 @@ func main() {
 	//goroutinesNumList := []int{1, 10, 20, 50}
 	goroutinesNumList := []int{1, 2, 5, 10}
 	topicNums := []int{1, 5, 10, 20}
-	var wg sync.SyncGroup
+
+	var wg sync.WaitGroup
+	duration := time.Minute * time.Duration(durationNum)
 
 	for _, topicNum := range topicNums {
 		for _, msgSize := range msgSizeList {
@@ -58,10 +60,7 @@ func main() {
 					wg.Add(1)
 					i := i
 					go func() {
-						topicName := topicPrefix
-						if sameTopic == "false" {
-							topicName = topicPrefix + "-" + strconv.Itoa(i%topicNum)
-						}
+						topicName := topicPrefix + "-" + strconv.Itoa(i%topicNum)
 						defer wg.Done()
 						producer.Produce(client, topicName, msgSize, duration)
 					}()
@@ -71,31 +70,6 @@ func main() {
 				fmt.Println(fmt.Sprintf("send %d topics with msgSize: %d with goroutines: %d done!", topicNum, msgSize, goroutinesNum))
 				time.Sleep(5 * time.Minute)
 			}
-		}
-	}
-
-	var wg sync.WaitGroup
-	duration := time.Minute * time.Duration(durationNum)
-
-	for _, msgSize := range msgSizeList {
-		for _, goroutinesNum := range goroutinesNumList {
-			for i := 0; i < goroutinesNum; i++ {
-				wg.Add(1)
-				i := i
-				go func() {
-					defer wg.Done()
-					topicName := topicPrefix
-					if sameTopic == "false" {
-						topicName = topicPrefix + "-" + strconv.Itoa(i)
-						go consumer.Consume(client, topicName, topicName, time.Second*10)
-					}
-					producer.Produce(client, topicName, msgSize, duration)
-				}()
-			}
-			wg.Wait()
-			fmt.Println("Current date and time is: ", time.Now().String())
-			fmt.Println(fmt.Sprintf("send msgSize: %d with goroutines: %d done!", msgSize, goroutinesNum))
-			time.Sleep(5 * time.Minute)
 		}
 	}
 }
